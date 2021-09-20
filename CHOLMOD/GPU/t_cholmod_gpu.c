@@ -18,6 +18,7 @@
 #include <string.h>
 #include "cholmod_template.h"
 #include "cholmod_gpu_kernels.h"
+#include "tq84-tsearch.h"
 #include <fenv.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -116,13 +117,13 @@ int TEMPLATE2 (CHOLMOD (gpu_init))
 
     /* divvy up the memory in dev_mempool */
     gpu_p->d_Lx[0] = Common->dev_mempool;
-    gpu_p->d_Lx[1] = Common->dev_mempool + Common->devBuffSize;
-    gpu_p->d_C = Common->dev_mempool + 2*Common->devBuffSize;
-    gpu_p->d_A[0] = Common->dev_mempool + 3*Common->devBuffSize;
-    gpu_p->d_A[1] = Common->dev_mempool + 4*Common->devBuffSize;
-    gpu_p->d_Ls = Common->dev_mempool + 5*Common->devBuffSize;
-    gpu_p->d_Map = gpu_p->d_Ls + (nls+1)*sizeof(Int) ;
-    gpu_p->d_RelativeMap = gpu_p->d_Map + (n+1)*sizeof(Int) ;
+    gpu_p->d_Lx[1] = (char *)Common->dev_mempool + Common->devBuffSize;
+    gpu_p->d_C = (char*)Common->dev_mempool + 2*Common->devBuffSize;
+    gpu_p->d_A[0] = (char*)Common->dev_mempool + 3*Common->devBuffSize;
+    gpu_p->d_A[1] = (char*)Common->dev_mempool + 4*Common->devBuffSize;
+    gpu_p->d_Ls = (char*)Common->dev_mempool + 5*Common->devBuffSize;
+    gpu_p->d_Map = (char*)gpu_p->d_Ls + (nls+1)*sizeof(Int) ;
+    gpu_p->d_RelativeMap = (char*)gpu_p->d_Map + (n+1)*sizeof(Int) ;
 
     /* Copy all of the Ls and Lpi data to the device.  If any supernodes are
      * to be computed on the device then this will be needed, so might as
@@ -272,7 +273,7 @@ void TEMPLATE2 (CHOLMOD (gpu_reorder_descendants))
 
     /* Sort the GPU-eligible supernodes */
     qsort ( scores, n_descendant, sizeof(struct cholmod_descendant_score_t),
-            (__compar_fn_t) CHOLMOD(score_comp) );
+            (tq84__compar_fn_t) CHOLMOD(score_comp) );
 
     /* Place sorted data back in descendant supernode linked list*/
     if ( n_descendant > 0 ) {
